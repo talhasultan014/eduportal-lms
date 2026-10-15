@@ -1,97 +1,181 @@
-# EduPortal LMS — Full-Stack Setup Guide
+# EduPortal LMS
 
-## Architecture
-- **Backend**: Node.js + Express  
-- **Oracle DB (via Sequelize)**: Users, Courses, Enrollments, Grades, Attendance, Assignments, Quizzes  
-- **MongoDB (via Mongoose)**: Notifications, Quiz Questions, Course Content  
-- **Frontend**: React (JSX) — connects to backend via REST API  
-- **Security**: JWT auth + RBAC (student / instructor / admin roles)
+**A full-stack Learning Management System integrating React, Node.js, Express, Oracle Database, and MongoDB.**
 
----
+EduPortal LMS is a web-based learning management system designed to support academic administration and learning activities through role-based access for students, instructors, and administrators.
 
-## 1. Oracle Database Setup (Oracle XE on localhost)
+The project explores full-stack application architecture, RESTful API development, relational database design, document-oriented data storage, authentication, and authorization.
 
-### Install Oracle XE 21c
-Download from: https://www.oracle.com/database/technologies/xe-downloads.html  
-After install, Oracle runs on `localhost:1521` with service `XEPDB1`.
+## Core Modules
 
-### Create the LMS user and schema
+The system is organized around the following functional areas:
 
-Open SQL*Plus or SQL Developer, connect as SYSDBA:
+- **Authentication and Authorization:** JWT-based authentication and role-based access control.
+- **User Management:** Student, instructor, and administrator accounts.
+- **Course Management:** Course organization and enrollment management.
+- **Academic Records:** Grades, attendance, and assignment data.
+- **Assessments:** Quiz and question management.
+- **Notifications:** Document-based notification storage.
+- **Course Content:** Management of course-related learning materials.
 
-```sql
--- Connect: sqlplus sys/your_sys_password@localhost:1521/XEPDB1 as sysdba
-CREATE USER lms_user IDENTIFIED BY your_password;
-GRANT CONNECT, RESOURCE, DBA TO lms_user;
+These modules describe the project's intended functional scope. Individual features may require additional configuration or integration to operate end-to-end.
+
+## Technology Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React, JavaScript, JSX |
+| Backend | Node.js, Express.js |
+| Relational Database | Oracle Database |
+| Document Database | MongoDB |
+| Database Integration | Sequelize, Mongoose |
+| Authentication | JSON Web Tokens (JWT) |
+| API Architecture | REST |
+
+## System Architecture
+
+EduPortal LMS uses a layered architecture separating the user interface, backend services, and database systems.
+
+```text
+              React Frontend
+                    |
+                REST API
+                    |
+            Node.js + Express
+                    |
+          Authentication & RBAC
+                    |
+             Application Routes
+                    |
+          +---------+---------+
+          |                   |
+     Oracle Database       MongoDB
+          |                   |
+    Users, Courses,       Notifications,
+    Enrollments,          Quiz Questions,
+    Grades, Attendance    Course Content
 ```
 
-Then connect as lms_user and run the full schema:
+The backend provides API endpoints and coordinates access to the application's data stores.
+
+## Database Design
+
+### Oracle Database
+
+Oracle is used for structured academic data, including:
+
+- Users
+- Courses
+- Enrollments
+- Grades
+- Attendance
+- Assignments
+- Quizzes
+
+The SQL schema is available in [`docs/schema.sql`](docs/schema.sql).
+
+### MongoDB
+
+MongoDB is used for document-oriented application data, including:
+
+- Notifications
+- Quiz questions
+- Course content
+
+This hybrid approach demonstrates the use of relational and document databases within a single application architecture.
+
+## Role-Based Access Control
+
+The application defines three user roles:
+
+| Capability | Student | Instructor | Admin |
+|---|---|---|---|
+| View own courses | Yes | Yes | Yes |
+| Browse and enroll | Yes | No | Yes |
+| View grades | Yes | No | Yes |
+| View attendance | Yes | No | Yes |
+| Create assignments | No | Yes | Yes |
+| Grade students | No | Yes | Yes |
+| Mark attendance | No | Yes | Yes |
+| Manage users | No | No | Yes |
+| Manage courses | No | Yes | Yes |
+
+These permissions represent the documented access-control design.
+
+## Project Structure
+
+```text
+eduportal-lms/
+├── backend/
+│   ├── config/
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   ├── package.json
+│   └── server.js
+├── frontend/
+│   └── src/
+│       ├── api.js
+│       └── LMSFrontend.jsx
+├── docs/
+│   └── schema.sql
+├── .gitignore
+└── README.md
 ```
-sqlplus lms_user/your_password@localhost:1521/XEPDB1 @docs/schema.sql
-```
 
-### Verify in SQL Developer
-1. Open SQL Developer → New Connection  
-2. Username: `lms_user`  
-3. Password: your password  
-4. Hostname: `localhost`  
-5. Port: `1521`  
-6. Service name: `XEPDB1`  
-7. Click **Test** → should say "Success"
+## Getting Started
 
----
+### Prerequisites
 
-## 2. MongoDB Setup (MongoDB Compass on localhost)
+- Node.js and npm
+- Oracle Database
+- MongoDB Community Server
+- A JavaScript development environment
 
-### Install MongoDB Community Server
-Download from: https://www.mongodb.com/try/download/community
+### 1. Clone the Repository
 
-Start the service:
 ```bash
-# Windows
-net start MongoDB
-
-# macOS
-brew services start mongodb-community
-
-# Linux
-sudo systemctl start mongod
+git clone https://github.com/talhasultan014/eduportal-lms.git
+cd eduportal-lms
 ```
 
-### Connect in MongoDB Compass
-1. Open MongoDB Compass  
-2. Connection string: `mongodb://localhost:27017`  
-3. Click **Connect**  
-4. Create database: **lms_db** (it auto-creates on first write)
+### 2. Configure Oracle Database
 
-No schema setup needed — Mongoose creates collections automatically.
+Create a dedicated application database user with only the permissions required by the schema.
 
----
+Use the SQL definitions in `docs/schema.sql` to initialize the relational database.
 
-## 3. Backend Setup
+Configure the connection for your local Oracle instance.
+
+### 3. Configure MongoDB
+
+Start MongoDB and configure the application's connection string, for example:
+
+```env
+MONGO_URI=mongodb://localhost:27017/lms_db
+```
+
+### 4. Configure the Backend
+
+Navigate to the backend directory:
 
 ```bash
-cd lms-project/backend
-
-# Install dependencies
+cd backend
 npm install
-
-# Copy environment file and fill in your credentials
-cp .env.example .env
 ```
 
-### Edit `.env`:
+Create a local `.env` file containing the environment variables required by the backend configuration.
+
+Example configuration:
+
 ```env
 ORACLE_USER=lms_user
-ORACLE_PASSWORD=your_oracle_password
-ORACLE_HOST=localhost
-ORACLE_PORT=1521
-ORACLE_SID=XEPDB1
+ORACLE_PASSWORD=replace_with_local_password
 ORACLE_CONNECT_STRING=localhost:1521/XEPDB1
 
 MONGO_URI=mongodb://localhost:27017/lms_db
 
-JWT_SECRET=replace_with_random_32+_char_string
+JWT_SECRET=replace_with_a_long_random_secret
 JWT_EXPIRES_IN=7d
 
 PORT=5000
@@ -99,107 +183,40 @@ NODE_ENV=development
 FRONTEND_URL=http://localhost:3000
 ```
 
-### Start the backend:
+The exact required variables should be checked against the backend configuration.
+
+Start the backend:
+
 ```bash
-npm run dev
-# or
 node server.js
 ```
 
-You should see:
-```
-Oracle DB connected & synced
-MongoDB connected: localhost
-LMS Server running on http://localhost:5000
-```
+### 5. Frontend Integration
 
-### Test the API:
-```
-GET http://localhost:5000/api/health
-```
+The repository includes React frontend source files in `frontend/src`.
 
----
+A complete standalone frontend build configuration is not currently included. To run the interface, these components must be integrated into a compatible React project with the required dependencies and API configuration.
 
-## 4. Frontend Setup
+## Security Considerations
 
-The frontend is a React app (Vite or Create React App).
+- JWT is used for application authentication.
+- Role-based authorization separates student, instructor, and administrator permissions.
+- Local environment files are excluded from version control.
+- Database credentials and JWT secrets must be configured securely.
+- Application database accounts should follow the principle of least privilege.
 
-### With Vite (recommended):
-```bash
-cd lms-project/frontend
-npm create vite@latest . -- --template react
-# Replace src/App.jsx contents with LMSFrontend.jsx
-npm install
-npm run dev
-# Runs on http://localhost:3000
-```
+This is an academic software project and has not been presented as a production-hardened application.
 
-### With Create React App:
-```bash
-npx create-react-app .
-# Replace src/App.js with LMSFrontend.jsx
-npm start
-```
+## Project Background
 
-The API base URL is set to `http://localhost:5000/api` in `src/LMSFrontend.jsx`.
+Developed as a Database Management Systems academic project, EduPortal LMS demonstrates practical experience with database modeling, backend API design, authentication, and frontend integration.
+
+## Author
+
+**Muhammad Talha Sultan**
+
+GitHub: [@talhasultan014](https://github.com/talhasultan014)
 
 ---
 
-## 5. RBAC — Role Permissions
-
-| Action | Student | Instructor | Admin |
-|--------|---------|------------|-------|
-| View own courses | ✓ | ✓ | ✓ |
-| Browse & enroll | ✓ | — | ✓ |
-| View own grades | ✓ | — | ✓ |
-| View own attendance | ✓ | — | ✓ |
-| Create assignments | — | ✓ | ✓ |
-| Grade students | — | ✓ | ✓ |
-| Mark attendance | — | ✓ | ✓ |
-| Manage users | — | — | ✓ |
-| Manage departments | — | — | ✓ |
-| Manage courses | — | ✓ | ✓ |
-| Delete courses | — | — | ✓ |
-
----
-
-## 6. First User / Seeding Data
-
-Register via the API (no UI register screen by default — for security):
-
-```bash
-curl -X POST http://localhost:5000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "first_name": "Admin",
-    "last_name": "User",
-    "email": "admin@lms.com",
-    "username": "admin",
-    "password": "Admin@1234",
-    "role": "admin"
-  }'
-```
-
-Then log in via the frontend with that email and password.
-
----
-
-## 7. Troubleshooting
-
-**Oracle connection fails:**
-- Make sure Oracle XE is running: `lsnrctl status`
-- Verify service name: `XEPDB1` (not `XE`)
-- Check ORACLE_CONNECT_STRING in .env matches exactly
-
-**MongoDB connection fails:**
-- Run `mongod --version` to confirm it's installed
-- Check `mongod` service is running
-- Default URI: `mongodb://localhost:27017/lms_db`
-
-**JWT errors on frontend:**
-- Token stored in `localStorage` under key `lms_token`
-- Clear site data and log in again if you see 401 errors
-
-**CORS errors:**
-- Make sure `FRONTEND_URL=http://localhost:3000` in `.env`
-- Frontend must run on port 3000 or update CORS config in server.js
+*An academic full-stack development project presented as part of a software engineering portfolio.*
